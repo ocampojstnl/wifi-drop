@@ -344,6 +344,9 @@ async function loadInfo() {
 function setupAds(ads) {
   if (!ads) return;
   const client = /^ca-pub-\d{10,20}$/.test(ads.client ?? "") ? ads.client : "";
+  // No ads to show (none set up yet, no placeholders): the side columns go, and the content takes the whole width.
+  const showing = ads.preview || (client && Object.values(ads.slots ?? {}).some((s) => /^\d{6,20}$/.test(String(s).trim())));
+  document.body.classList.toggle("has-ads", !!showing);
   let any = false;
   for (const box of document.querySelectorAll("[data-ad]")) {
     const slot = String(ads.slots?.[box.dataset.ad] ?? "").trim();
@@ -1235,9 +1238,12 @@ async function join() {
   } catch (e) {
     console.warn("join", e);
     setOnline(false);
-    $("liveText").textContent = "Offline";
-    toast(/ABLY_API_KEY/.test(e.message) ? "Wi-Fi Drop isn't set up yet: the site needs its Ably key" : "Couldn't reach Wi-Fi Drop: trying again…");
-    setTimeout(join, 8000);
+    // The site has no Ably key yet (set ABLY_API_KEY in Vercel, or in .env when testing): say so, plainly.
+    const notSetUp = /ABLY_API_KEY/.test(e.message);
+    $("liveText").textContent = notSetUp ? "Not set up" : "Offline";
+    $("live").title = notSetUp ? "The site needs its Ably key (ABLY_API_KEY): see the README" : "Can't reach Wi-Fi Drop right now";
+    toast(notSetUp ? "Wi-Fi Drop isn't set up yet: the site needs its Ably key (ABLY_API_KEY)" : "Couldn't reach Wi-Fi Drop: trying again…");
+    setTimeout(join, notSetUp ? 30000 : 8000);
   }
 }
 

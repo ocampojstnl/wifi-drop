@@ -43,7 +43,8 @@ const server = http.createServer(async (req, res) => {
     if (PAGES[p] && req.method === "GET") return send(res, 200, await renderPage(p), "text/html; charset=utf-8");
     if (p === "/api/token") return token(req, res);
     if (p === "/api/qr") return qr(req, res);
-    if (p === "/config.json") return send(res, 200, JSON.stringify(await siteConfig()), "application/json");
+    // On this computer the ad spaces always show as placeholders, to see where the ads go (ADS_PREVIEW=0 hides them).
+    if (p === "/config.json") return send(res, 200, JSON.stringify(await siteConfig({ preview: process.env.ADS_PREVIEW !== "0" })), "application/json");
     if (p === "/ads.txt") {
       const txt = adsTxt(await siteConfig());
       return txt ? send(res, 200, txt) : send(res, 404, "Not found");
