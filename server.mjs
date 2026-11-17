@@ -50,7 +50,7 @@ const server = http.createServer(async (req, res) => {
       return txt ? send(res, 200, txt) : send(res, 404, "Not found");
     }
     if (p === "/favicon.svg" || p === "/favicon.ico") return serveFile(res, path.join(PUBLIC, "favicon.svg"));
-    if (p === "/static/vendor/ably.min.js") return serveFile(res, path.join(ROOT, "node_modules", "ably", "build", "ably.min.js"));
+    if (p === "/static/vendor/ably.min.js") return serveFile(res, path.join(ROOT, "node_modules", "@ably", "pubsub-device", "dist", "cdn", "ably.min.js"));
     if (p.startsWith("/static/")) {
       const file = path.join(PUBLIC, decodeURIComponent(p.slice("/static/".length)));
       if (!file.startsWith(PUBLIC + path.sep)) return send(res, 404, "Not found");

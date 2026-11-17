@@ -11,7 +11,7 @@
 // A tab's id is "<device>~<tab>": the device part is given by the site from a secret this browser keeps, so nobody
 // can pose as another device. Ably attaches it to everything a tab sends; it can't be faked either.
 
-/* global Ably */
+/* global AblyPubSub */ // Ably's browser library (@ably/pubsub-device), loaded by layout.html
 
 const MAX_LISTED = 60; // files listed per tab (a room message has a size limit)
 const deviceOf = (clientId = "") => clientId.split("~")[0];
@@ -35,7 +35,7 @@ async function pass(device, tab) {
 export async function connect({ device, tab, profile, onHello, onDevices, onSignal, onGrant, onOnline }) {
   let first = await pass(device, tab);
   const { room, did, clientId } = first;
-  const ably = new Ably.Realtime({
+  const ably = AblyPubSub.createClient({
     authCallback: (_params, done) => {
       if (first) { const t = first.tokenRequest; first = null; return done(null, t); }
       pass(device, tab).then((p) => done(null, p.tokenRequest), (e) => done(e.message, null));

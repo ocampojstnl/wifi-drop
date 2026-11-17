@@ -17,7 +17,7 @@ for (const pathname of Object.keys(PAGES)) {
 // Static files (styles, scripts, fonts), plus Ably's browser library.
 await fs.cp(PUBLIC, path.join(DIST, "static"), { recursive: true, filter: (src) => !src.includes(`${path.sep}pages`) && !src.endsWith("layout.html") });
 await fs.mkdir(path.join(DIST, "static", "vendor"), { recursive: true });
-await fs.copyFile(path.join(ROOT, "node_modules", "ably", "build", "ably.min.js"), path.join(DIST, "static", "vendor", "ably.min.js"));
+await fs.copyFile(path.join(ROOT, "node_modules", "@ably", "pubsub-device", "dist", "cdn", "ably.min.js"), path.join(DIST, "static", "vendor", "ably.min.js"));
 await fs.copyFile(path.join(PUBLIC, "favicon.svg"), path.join(DIST, "favicon.svg"));
 
 const config = await siteConfig();
