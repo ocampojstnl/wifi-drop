@@ -1,7 +1,7 @@
 <!-- title: Wi-Fi Drop · Share files | description: Send photos, videos and files between your phone and computers over your own Wi-Fi. Direct, encrypted, nothing uploaded. -->
 <section class="page-head">
   <h1>Send files across your Wi-Fi</h1>
-  <p class="muted">Drop files here, choose who gets them, and they go straight from this device to theirs. Nothing is uploaded.</p>
+  <p class="muted">Everyone on your Wi-Fi who opens this site can send files to each other. Drop files here, choose who gets them, and they go straight from this device to theirs.</p>
 </section>
 
 <!-- The windows of the Share page, arranged like a desktop collage (see .mosaic in style.css). -->
@@ -28,13 +28,18 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </button>
     </div>
+    <!-- The promise, where people share: their files never go to a server. -->
+    <p class="no-server">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span><b>Your files never touch a server.</b> They go straight from this device to the other one, encrypted. Nothing is uploaded, nothing is stored.</span>
+    </p>
   </div>
 
   <div class="win qr-card m-qr">
     <div class="win-bar"><span class="win-title">Join from any device</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
     <div class="win-body">
-      <p class="muted">Everyone on this Wi-Fi is welcome, on a phone, tablet or computer: scan the code or type the address. It doesn&rsquo;t work from anywhere else.</p>
-      <div class="qr" id="qr"><span class="muted">Finding your network…</span></div>
+      <p class="muted">Everyone on this Wi-Fi is welcome, on a phone, tablet or computer: scan the code or open the address. People on other networks only ever see their own devices, never yours.</p>
+      <div class="qr" id="qr"><span class="muted">Loading…</span></div>
       <div class="url-row">
         <code id="url">…</code>
         <button class="icon-btn" id="copy" type="button" title="Copy link" aria-label="Copy link">
@@ -77,7 +82,8 @@
   <section class="win fineprint m-readme">
     <div class="win-bar"><span class="win-title">readme.txt</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
     <div class="win-body">
-      <p><b>Only on this Wi-Fi.</b> Devices outside your home network can&rsquo;t open Wi-Fi Drop, and files go directly from one device to another, encrypted, without passing through any server.</p>
+      <p><b>No uploads, ever.</b> Files go directly from one device to another, encrypted. They never pass through our server, nor anyone else&rsquo;s: the website only helps the devices on your Wi-Fi find each other.</p>
+      <p><b>Only your network.</b> You see the devices on your own Wi-Fi, and they see you. Nobody else does.</p>
       <p><b>Nothing is kept.</b> What you share stays in this browser tab while Wi-Fi Drop is open in it. Close the tab and it disappears from every device. <a href="/privacy" data-nav>Privacy details</a></p>
     </div>
   </section>

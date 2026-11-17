@@ -5,6 +5,7 @@
 // keeps serving its shared files. Each page has only some of the parts below; a part missing from this page is a
 // stand-in element that goes nowhere, so the code can treat every page alike.
 import { mascot, setMood } from "./mascot.js";
+import { connect } from "./net.js";
 
 const $ = (id) => document.getElementById(id) ?? document.createElement("div");
 const onPage = (id) => !!document.getElementById(id);
@@ -17,8 +18,8 @@ function drips(root = document) {
 }
 drips();
 
-/** Home network only: no outside servers. The app on the PC fills in each device's real address (see server.mjs). */
-const RTC = { iceServers: [] };
+/** How two devices connect directly. Files only ever travel over this direct connection, never through a server. */
+const RTC = { iceServers: [] }; // filled from /config.json: public helpers that let two devices find a direct path
 // 64 KB: what every browser handles. Bigger messages make older phone browsers (Huawei Browser, older Chromium)
 // close the channel mid-transfer.
 const CHUNK = 64 * 1024;
@@ -91,11 +92,11 @@ function toast(text) {
   toastTimer = setTimeout(() => (t.hidden = true), 3200);
 }
 
-async function post(url, body) {
-  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: me.id, secret: me.secret, ...body }) });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-}
-const signal = (to, data) => post("/api/signal", { to, data }).catch((e) => console.warn("signal", e));
+/** This tab in the network's room (see net.js); null until it has joined. */
+let net = null;
+const signal = (to, data) => net?.signal(to, data);
+/** Tell the room this device's name (from any of its tabs; the others follow, see renderSelf). */
+const announceName = (name) => (net ? net.setName(name) : Promise.reject(new Error("offline")));
 
 const ICON = {
   pc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
@@ -254,14 +255,6 @@ function forgetTab() {
 /** Received files kept for their Save tap, across pages. */
 const receivedKept = new Set();
 
-// Sent here by Wi-Fi Drop on another PC: it tells this page that PC's name and how to get back to it.
-{
-  const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.get("home")) store.set("home", hash.get("home"), sessionStorage);
-  if (hash.get("name") && !store.get("nick")) store.set("nick", cleanName(hash.get("name")));
-  if (location.hash) history.replaceState(null, "", location.pathname);
-}
-const home = /^\d{2,5}$/.test(store.get("home", sessionStorage)) ? store.get("home", sessionStorage) : "";
 
 let renaming = false;
 function renderSelf(name) {
@@ -287,7 +280,8 @@ function rename(current) {
     store.set("nick", name);
     $("nameForm").hidden = true;
     renderSelf(name);
-    post("/api/name", { name }).then(() => toast(`Everyone now sees this device as “${name}”`), () => toast("Couldn't rename it: try again"));
+    tabs.postMessage({ name });
+    announceName(name).then(() => toast(`Everyone now sees this device as “${name}”`), () => toast("Couldn't rename it: try again"));
   };
   input.onkeydown = (e) => { if (e.key === "Enter") finish(true); else if (e.key === "Escape") finish(false); };
   input.onblur = () => finish(true);
@@ -302,49 +296,44 @@ $("nameForm").onsubmit = (e) => {
   store.set("nick", name);
   $("nameForm").hidden = true;
   renderSelf(name);
-  post("/api/name", { name }).then(() => toast(`Everyone now sees this device as “${name}”`), () => toast("Couldn't save the name: try again"));
+  tabs.postMessage({ name });
+  announceName(name).then(() => toast(`Everyone now sees this device as “${name}”`), () => toast("Couldn't save the name: try again"));
 };
 $("nameSkip").onclick = () => { store.set("nickAsked", "1"); $("nameForm").hidden = true; };
 
-// ── Moving to the computer that hosts Wi-Fi Drop ───────────────────────────────────────────────────────────
+// ── This device, the site's settings, the join code ────────────────────────────────────────────────────────
 
-/** Go there now, unless that would drop files this tab is sharing or receiving: then ask first. */
-function moveTo(url, text) {
-  if (!mine.size && !active && !document.querySelector(".up.ready")) return location.assign(url);
-  $("moveText").textContent = text;
-  $("moveGo").href = url;
-  $("move").hidden = false;
+/** Phone, tablet or computer, from the browser's own description. */
+function deviceKind() {
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet|MatePad/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "tablet";
+  if (/iPhone|Android|Mobile/i.test(ua)) return "phone";
+  return "pc";
+}
+/** A first name for this device, until someone picks one. */
+function defaultName(kind) {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (kind === "tablet") return /Android/.test(ua) ? "Android tablet" : "iPad";
+  if (/Android/.test(ua)) return "Android phone";
+  if (/Windows/.test(ua)) return "Windows PC";
+  if (/Mac/.test(ua)) return "Mac";
+  if (/CrOS/.test(ua)) return "Chromebook";
+  return "Computer";
 }
 
-// ── The PC's QR ────────────────────────────────────────────────────────────────────────────────────────────
-
 let link = "";
+let config = { ads: null, iceServers: [] };
 async function loadInfo() {
-  const info = await (await fetch("/api/info")).json();
+  try { config = await (await fetch("/config.json", { cache: "no-store" })).json(); } catch {}
+  if (config.iceServers?.length) RTC.iceServers = config.iceServers;
   // Computers get the computer layout (drag and drop, side-by-side windows), phones a simpler one.
-  document.body.classList.toggle("is-pc", info.kind === "pc");
-  setupAds(info.ads);
-  // Every device shows how to join, so anyone at the party can bring the next person in: the address this device
-  // used to get here works for everyone else on the Wi-Fi too.
-  if (!info.local && !info.links.length) info.links = [{ name: "this network", address: location.hostname, url: `${location.origin}/` }];
-  if (!info.links.length) {
-    $("qr").innerHTML = `<span class="muted">No home network found. Connect this PC to your Wi-Fi, then reload.</span>`;
-    $("url").textContent = "—";
-    return;
-  }
-  const net = $("net");
-  net.innerHTML = info.links.map((l, i) => `<option value="${i}">${esc(l.address)} · ${esc(l.name)}</option>`).join("");
-  $("netRow").hidden = info.links.length < 2;
-  let pick = 0;
-  try { pick = Math.min(Number(localStorage.getItem("net") || 0), info.links.length - 1); } catch {}
-  net.value = String(pick);
-  const show = (i) => {
-    link = info.links[i].url;
-    $("qr").innerHTML = `<img alt="QR code to open Wi-Fi Drop on another device" src="/api/qr?text=${encodeURIComponent(link)}" />`;
-    $("url").textContent = link.replace(/^http:\/\//, "");
-  };
-  show(pick);
-  net.onchange = () => { show(Number(net.value)); try { localStorage.setItem("net", net.value); } catch {} };
+  document.body.classList.toggle("is-pc", deviceKind() === "pc");
+  setupAds(config.ads);
+  // The join code: the site's own address. Anyone on the same Wi-Fi who opens it lands in this same room.
+  link = `${location.origin}/`;
+  $("qr").innerHTML = `<img alt="QR code to open Wi-Fi Drop on another device" src="/api/qr?text=${encodeURIComponent(link)}" />`;
+  $("url").textContent = link.replace(/^https?:\/\//, "");
 }
 // ── Ads (Google AdSense), set up in ads.json next to server.mjs ────────────────────────────────────────────
 
@@ -442,12 +431,12 @@ function unshare(fid) {
 
 /** Tell the others what's on offer: names and sizes only, and who has access to each. */
 function publish() {
-  if (!me.id) return;
+  if (!net) return;
   const offers = [...mine.entries()].map(([fid, f]) => {
     const a = access.get(fid) ?? { to: null, reshare: true };
     return { fid, name: f.name, size: f.size, type: f.type, to: a.to, reshare: a.reshare };
   });
-  post("/api/offers", { offers }).catch(() => {});
+  net.setOffers(offers).catch(() => {});
 }
 
 /** Every other device, once each (two tabs of one browser are one device), plus any listed that are away. */
@@ -567,12 +556,17 @@ function renderMine() {
 }
 $("clearMine").onclick = () => { for (const fid of [...mine.keys()]) unshare(fid); publish(); renderMine(); };
 
-/** Someone with access gave others access too: the PC tells this device, which keeps the list. */
-function onAccessGranted({ fid, to, by }) {
+/**
+ * Someone asks to give other devices access to one of this tab's private files. This tab decides: only a device
+ * that has access itself, on a file whose owner allowed passing it on. (Who's asking comes from the room, which
+ * can't be faked.)
+ */
+function onAccessGranted({ fid, add, fromDid, by }) {
   const a = access.get(fid);
-  if (!a || !Array.isArray(to)) return;
-  const added = to.filter((d) => !a.to?.includes(d));
-  a.to = to;
+  if (!a?.to || !a.reshare || !a.to.includes(fromDid)) return;
+  const added = add.filter((d) => typeof d === "string" && /^[\w-]{16}$/.test(d) && d !== me.did && !a.to.includes(d));
+  if (!added.length) return;
+  a.to = [...a.to, ...added].slice(0, 50);
   keepAccess(fid);
   publish();
   renderMine();
@@ -598,7 +592,7 @@ async function giveAccess(peer, file) {
   });
   if (!a) return;
   try {
-    await post("/api/grant", { owner: holderOf(peer, file), fid: file.fid, to: a.to });
+    await net.grant(holderOf(peer, file), file.fid, a.to);
     toast(`${audience(a.to)} can now download ${file.name}`);
   } catch (e) {
     toast(e.message || "Couldn't give access: try again");
@@ -666,8 +660,8 @@ window.addEventListener("beforeunload", (e) => {
 // The tab is closing (not moving to another page): its files are gone, so tell the others at once and they vanish
 // from every device's list right away, and delete what this tab kept.
 window.addEventListener("pagehide", () => {
-  if (toNextPage || !me.id) return;
-  navigator.sendBeacon("/api/leave", new Blob([JSON.stringify({ id: me.id, secret: me.secret })], { type: "application/json" }));
+  if (toNextPage || !net) return;
+  net.leave();
   // Deleting may not finish as the page goes: note it (instantly), so coming back in this tab doesn't revive them.
   store.set("left", "1", sessionStorage);
   forgetTab();
@@ -1181,51 +1175,71 @@ function renderSummary() {
   $("peersCount").textContent = others.length || "";
 }
 
-let deviceKey = "";
-function join() {
-  // The PC knows which device this is from its address on the Wi-Fi; the session is this tab, across its pages.
-  const es = new EventSource(`/api/events?s=${encodeURIComponent(SESSION)}`);
-  es.addEventListener("hello", (e) => {
-    Object.assign(me, JSON.parse(e.data));
-    $("live").classList.remove("off");
-    $("liveText").textContent = "Online";
-    downSince = 0;
-    setMood(document.querySelector(".brand .mascot"), "idle");
-    publish(); // after a reconnect, offer this device's files again
-    const nick = store.get("nick");
-    if (nick) post("/api/name", { name: nick }).catch(() => {});
-  });
-  es.addEventListener("peers", (e) => {
-    peers = JSON.parse(e.data);
-    const self = peers.find((p) => p.did === me.did); // this device, whichever of its windows named it
-    if (self) renderSelf(self.name);
-    for (const p of peers) if (p.did && p.did !== me.did) knownDevices.set(p.did, p.name);
-    renderPeers();
-    renderSendTo();
-    // The device pickers on this device's own files: only when the devices change, and not mid-choice.
-    const key = peers.map((p) => `${p.did}:${p.name}`).sort().join("|");
-    if (key !== deviceKey && !document.activeElement?.closest?.("#mine")) { deviceKey = key; renderMine(); }
-    renderSummary();
-    announcePrivate();
-  });
-  es.addEventListener("signal", (e) => onSignal(JSON.parse(e.data)).catch((err) => console.warn(err)));
-  es.addEventListener("access", (e) => onAccessGranted(JSON.parse(e.data)));
-  // Wi-Fi Drop on another computer is hosting now: everyone gathers there.
-  es.addEventListener("moveto", (e) => moveTo(JSON.parse(e.data).url, "Wi-Fi Drop is running on another computer here: join it to see all devices."));
-  es.onerror = () => {
-    $("live").classList.add("off");
-    $("liveText").textContent = "Reconnecting";
-    setMood(document.querySelector(".brand .mascot"), "walk"); // looking for the network
-    downSince ||= Date.now();
-  };
-  // The computer hosting this page went away: go back to Wi-Fi Drop on this PC, which takes over or finds the new host.
-  setInterval(() => {
-    if (home && downSince && Date.now() - downSince > 6000) {
-      moveTo(`http://localhost:${home}/`, "The computer hosting Wi-Fi Drop went offline. Reconnect through this PC.");
-    }
-  }, 1000);
+/**
+ * This browser's own secret: the site turns it into this device's lasting id, so files shared with it find it again
+ * after a reload. Made once and kept in this browser (a private window is a separate browser, so a new device).
+ */
+function deviceSecret() {
+  let s = store.get("device");
+  if (!/^[\w-]{16,64}$/.test(s)) { s = token(); store.set("device", s); }
+  return s;
 }
-let downSince = 0;
+
+/** The other tabs of this browser: renaming in one renames them all. */
+const tabs = "BroadcastChannel" in window ? new BroadcastChannel("wifi-drop") : { postMessage() {}, onmessage: null };
+tabs.onmessage = (e) => {
+  const name = cleanName(e.data?.name);
+  if (!name) return;
+  $("nameForm").hidden = true;
+  renderSelf(name);
+  announceName(name).catch(() => {});
+};
+
+const setOnline = (on) => {
+  $("live").classList.toggle("off", !on);
+  $("liveText").textContent = on ? "Online" : "Reconnecting";
+  setMood(document.querySelector(".brand .mascot"), on ? "idle" : "walk"); // looking for the network
+};
+
+let deviceKey = "";
+function onDevices(list) {
+  peers = list;
+  const self = peers.find((p) => p.did === me.did); // this device, whichever of its windows named it
+  if (self) renderSelf(self.name);
+  for (const p of peers) if (p.did && p.did !== me.did) knownDevices.set(p.did, p.name);
+  renderPeers();
+  renderSendTo();
+  // The device pickers on this device's own files: only when the devices change, and not mid-choice.
+  const key = peers.map((p) => `${p.did}:${p.name}`).sort().join("|");
+  if (key !== deviceKey && !document.activeElement?.closest?.("#mine")) { deviceKey = key; renderMine(); }
+  renderSummary();
+  announcePrivate();
+}
+
+/** Join this network's room. If it can't (offline, or the site isn't set up yet), try again in a little while. */
+async function join() {
+  const kind = deviceKind();
+  const nick = store.get("nick");
+  try {
+    net = await connect({
+      device: deviceSecret(),
+      tab: SESSION,
+      profile: { name: nick || defaultName(kind), named: !!nick, kind },
+      onHello: (hello) => { Object.assign(me, hello); },
+      onDevices,
+      onSignal: (msg) => onSignal(msg).catch((err) => console.warn(err)),
+      onGrant: onAccessGranted,
+      onOnline: setOnline,
+    });
+    publish(); // this tab's files (brought back from its previous page, or shared before it joined)
+  } catch (e) {
+    console.warn("join", e);
+    setOnline(false);
+    $("liveText").textContent = "Offline";
+    toast(/ABLY_API_KEY/.test(e.message) ? "Wi-Fi Drop isn't set up yet: the site needs its Ably key" : "Couldn't reach Wi-Fi Drop: trying again…");
+    setTimeout(join, 8000);
+  }
+}
 
 if (!window.RTCPeerConnection) {
   $("noPeers").hidden = false;

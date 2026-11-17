@@ -87,7 +87,7 @@
 
   <footer class="foot">
     <nav class="foot-nav" aria-label="More pages">{{nav}}</nav>
-    <p>Wi-Fi Drop · Works only on your home network: it can&rsquo;t be reached from outside it, and your files never leave it.</p>
+    <p>Wi-Fi Drop · Your files go straight from one device to the other. They are never uploaded, and never pass through our server or anyone else&rsquo;s. You only see devices on your own network.</p>
   </footer>
 
   <input id="pickFor" type="file" multiple hidden />
@@ -141,6 +141,7 @@
     <span class="bubble" id="toastText"></span>
   </div>
 
+  <script src="/static/vendor/ably.min.js"></script>
   <script type="module" src="/static/app.js"></script>
 </body>
 </html>

@@ -487,3 +487,8 @@ body:not(.is-pc) .drop { padding: 22px 16px 24px; }
   *, .mascot * { animation: none !important; transition: none !important; }
   .mascot .m-eyes-blink, .mascot .m-feet-b { display: none !important; }
 }
+
+/* The promise, right where people share: files never touch a server */
+.no-server { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 12px 16px; border-top: var(--bw) solid var(--ink); background: var(--paper); font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.no-server svg { width: 18px; height: 18px; margin-top: 1px; color: var(--ink); }
+.no-server b { color: var(--ink); font-family: var(--mono); }
