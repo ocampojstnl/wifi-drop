@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="{{description}}" />
+  <title>{{title}}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<!--
+  Every page of Wi-Fi Drop is built from this frame (server.mjs fills in the {{…}} parts) and runs the whole app:
+  whichever page is open, this device stays connected and its shared files stay available.
+-->
+<body data-page="{{page}}">
+  <!-- The menu bar: who this device is, what it shares, whether it's online. -->
+  <header class="menubar">
+    <a class="brand" href="/" data-nav aria-label="Wi-Fi Drop: Share">
+      <span class="brand-drip" data-drip="idle" data-size="2"></span>
+      <span class="wordmark">wifi_drop</span>
+    </a>
+    <div class="menubar-right">
+      <p class="sub" id="sub">Device to device, over your home Wi-Fi</p>
+      <a class="sharing-pill" id="sharingPill" href="/" data-nav hidden></a>
+      <span class="live off" id="live"><span class="dot"></span><span id="liveText">Connecting</span></span>
+    </div>
+  </header>
+
+  <!--
+    The desktop: an ad column on each side, the app in the middle (page icons on top, then the page's windows).
+    Four ads. Wide screens: two in each side column. Narrower: the same four between the windows (each ad shows in
+    one place only, whichever fits the screen). Set up in ads.json.
+  -->
+  <div class="desktop">
+    <aside class="rail rail-left" aria-label="Advertisements">
+      <div class="ad ad-tall" data-ad="ad1" data-format="vertical" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+      <div class="ad ad-box" data-ad="ad2" data-format="rectangle" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+    </aside>
+
+    <main class="center" id="center">
+      <nav class="icons" aria-label="Pages">
+        <a class="desk-icon" href="/" data-nav><span class="desk-ico" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M12 9h18l6 6v14H12Z" fill="#fff" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M4 15a2 2 0 0 1 2-2h10l3 3h21a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" fill="#f6b928" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M4 22h38" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg></span><span class="desk-label">Share</span></a>
+        <a class="desk-icon" href="/devices" data-nav><span class="desk-ico" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="22" cy="22" r="16" fill="#31a7b5" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M6 22h32M22 6c-6 5-6 27 0 32M22 6c6 5 6 27 0 32M9 14h26M9 30h26" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="31" cy="31" r="7" fill="#f6d3b6" fill-opacity=".85" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M36 36l7 7" fill="none" stroke="#1d1a17" stroke-width="4.5" stroke-linecap="round"/><path d="M36 36l7 7" fill="none" stroke="#f27a12" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="desk-label">Devices</span><span class="nav-badge" data-devices hidden></span></a>
+        <a class="desk-icon" href="/how-it-works" data-nav><span class="desk-ico" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="9" y="7" width="30" height="35" fill="#fffaf3" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M15 4v7M21 4v7M27 4v7M33 4v7" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M15 19h18M15 25h18M15 31h11" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg></span><span class="desk-label">Guide</span></a>
+        <a class="desk-icon" href="/privacy" data-nav><span class="desk-ico" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M15 21v-5a9 9 0 0 1 18 0v5" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><rect x="9" y="21" width="30" height="21" fill="#7b6fc6" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="24" cy="30" r="3" fill="#fffaf3" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M24 33v4" fill="none" stroke="#fffaf3" stroke-width="2.6" stroke-linecap="round"/></svg></span><span class="desk-label">Privacy</span></a>
+        <a class="desk-icon" href="/help" data-nav><span class="desk-ico" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 7h34v26H25l-8 8v-8H7Z" fill="#fffaf3" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M19.5 16a4.5 4.5 0 1 1 6.3 4.1c-1.2.6-1.8 1.4-1.8 2.7v.7" fill="none" stroke="#1d1a17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="24" cy="28" r="1.8" fill="#1d1a17"/></svg></span><span class="desk-label">Help</span></a>
+      </nav>
+
+      <div class="win move" id="move" role="alert" hidden>
+        <div class="win-bar"><span class="win-title">Heads up</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        <div class="win-body move-body">
+          <span id="moveText"></span>
+          <a class="btn primary" id="moveGo" href="/">Join</a>
+        </div>
+      </div>
+
+      <form class="win name-card" id="nameForm" hidden>
+        <div class="win-bar"><span class="win-title">Login</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        <div class="win-body name-card-body">
+          <span data-drip="happy" data-size="3"></span>
+          <div class="name-card-text">
+            <b>Hi, I&rsquo;m Drip! What should I call this device?</b>
+            <span>So everyone on the network knows who&rsquo;s who, and can send files to it.</span>
+          </div>
+          <div class="name-card-row">
+            <input id="nameInput" maxlength="32" placeholder="device_name" autocomplete="off" aria-label="Name for this device" />
+            <button class="btn primary" type="submit">Enter</button>
+            <button class="btn" id="nameSkip" type="button">Later</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="ad ad-inline" data-ad="ad1" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+
+      {{content}}
+
+      <div class="ad ad-inline" data-ad="ad4" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+    </main>
+
+    <aside class="rail rail-right" aria-label="Advertisements">
+      <div class="ad ad-tall" data-ad="ad3" data-format="vertical" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+      <div class="ad ad-box" data-ad="ad4" data-format="rectangle" hidden><span class="ad-label">Advertisement</span><div class="ad-body"></div></div>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <nav class="foot-nav" aria-label="More pages">{{nav}}</nav>
+    <p>Wi-Fi Drop · Works only on your home network: it can&rsquo;t be reached from outside it, and your files never leave it.</p>
+  </footer>
+
+  <input id="pickFor" type="file" multiple hidden />
+
+  <!-- Transfers: a little window in the corner, on every page. Drip walks along each bar, carrying the file. -->
+  <section class="win dock" aria-label="Transfers">
+    <div class="win-bar"><span class="win-title">Copy</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <ul class="transfers" id="transfers" aria-live="polite"></ul>
+  </section>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="win overlay-box">
+      <div class="win-bar"><span class="win-title">Drop it!</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <div class="win-body">
+        <span data-drip="happy" data-size="6"></span>
+        <p>Let go to share</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Who can download a file: everyone on the network, or chosen devices. -->
+  <dialog class="modal access win" id="access" aria-labelledby="accessTitle">
+    <div class="win-bar"><span class="win-title" id="accessTitle">Share with</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <form id="accessForm" method="dialog" class="win-body">
+      <p class="muted" id="accessSub"></p>
+      <div class="access-modes" id="accessModes">
+        <label class="mode">
+          <input type="radio" name="mode" id="accessEveryone" />
+          <span><b>Everyone on this network</b><small>Any device that opens Wi-Fi Drop here can download it.</small></span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="mode" id="accessChosen" />
+          <span><b>Only people I choose</b><small>Nobody else even sees the file.</small></span>
+        </label>
+      </div>
+      <div class="pick-list" id="accessList"></div>
+      <label class="reshare" id="accessReshareRow">
+        <input type="checkbox" id="accessReshare" />
+        <span>People with access can give access to others</span>
+      </label>
+      <div class="modal-actions">
+        <button class="btn" type="button" id="accessCancel">Cancel</button>
+        <button class="btn primary" type="submit" id="accessSave">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Messages: Drip says them, in a speech bubble. -->
+  <div class="toast" id="toast" role="status" hidden>
+    <span data-drip="happy" data-size="3"></span>
+    <span class="bubble" id="toastText"></span>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
