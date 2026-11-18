@@ -2,7 +2,7 @@
 // settings (config.json), and ads.txt once there's an AdSense publisher id. Run: npm run build
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt } from "./lib/pages.mjs";
+import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt, bundleTrystero } from "./lib/pages.mjs";
 
 const DIST = path.join(ROOT, "dist");
 await fs.rm(DIST, { recursive: true, force: true });
@@ -14,10 +14,10 @@ for (const pathname of Object.keys(PAGES)) {
   await fs.writeFile(path.join(DIST, file), await renderPage(pathname));
 }
 
-// Static files (styles, scripts, fonts), plus Ably's browser library.
+// Static files (styles, scripts, fonts), plus Trystero (finds the other devices) bundled for browsers.
 await fs.cp(PUBLIC, path.join(DIST, "static"), { recursive: true, filter: (src) => !src.includes(`${path.sep}pages`) && !src.endsWith("layout.html") });
 await fs.mkdir(path.join(DIST, "static", "vendor"), { recursive: true });
-await fs.copyFile(path.join(ROOT, "node_modules", "@ably", "pubsub-device", "dist", "cdn", "ably.min.js"), path.join(DIST, "static", "vendor", "ably.min.js"));
+await fs.writeFile(path.join(DIST, "static", "vendor", "trystero.js"), await bundleTrystero());
 await fs.copyFile(path.join(PUBLIC, "favicon.svg"), path.join(DIST, "favicon.svg"));
 
 const config = await siteConfig();

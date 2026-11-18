@@ -33,14 +33,14 @@
 <section class="win">
   <div class="win-bar"><span class="win-title">What the website does, and doesn&rsquo;t</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
   <div class="win-body prose">
-  <p>The website only <b>introduces</b> the devices on your Wi-Fi to each other. To do that, a few small messages go through it and through <b>Ably</b>, the live-messaging service it uses:</p>
-  <ul>
-    <li>which devices are here, with the name you gave them,</li>
-    <li>the <b>names and sizes</b> of the files they share (private files only to the devices they&rsquo;re shared with),</li>
-    <li>the messages two devices exchange to open a direct connection.</li>
-  </ul>
-  <p>Then the file itself goes over that direct connection. <b>The file&rsquo;s contents never go to the website, to Ably, or to any other server.</b></p>
-  <p>Devices on the same Wi-Fi are recognised by the internet connection they share: the site turns its address into a secret room code and doesn&rsquo;t keep it. To find a direct path, each device asks a free public helper (from Google or Cloudflare) what its address looks like from outside; no files are involved.</p>
+  <p>The website only helps the devices on your Wi-Fi <b>find each other</b>, in three steps:</p>
+  <ol>
+    <li>It gives your device a <b>secret room code and password</b> for your network. They&rsquo;re made from your home internet connection&rsquo;s address, which the site doesn&rsquo;t keep.</li>
+    <li>Your device leaves a short <b>&ldquo;here&rsquo;s how to reach me&rdquo; note</b> on a few free public relay servers (Nostr relays). The note is <b>encrypted</b> with your network&rsquo;s password, so the relays can&rsquo;t read it, and only devices on your network can.</li>
+    <li>The devices then connect <b>directly</b> to each other. From there on, everything goes device to device: who&rsquo;s here, names, the files on offer, and the files themselves.</li>
+  </ol>
+  <p><b>Files, file names and your device list never go to the website, to the relays, or to any other server.</b></p>
+  <p>Like any website, the relays can see the internet address a device connects from, but not what it says or who it talks to. To find a direct path, each device also asks a free public helper (from Google or Cloudflare) what its address looks like from outside; no files are involved.</p>
 </div>
 </section>
 

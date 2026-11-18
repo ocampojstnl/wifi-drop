@@ -1178,16 +1178,6 @@ function renderSummary() {
   $("peersCount").textContent = others.length || "";
 }
 
-/**
- * This browser's own secret: the site turns it into this device's lasting id, so files shared with it find it again
- * after a reload. Made once and kept in this browser (a private window is a separate browser, so a new device).
- */
-function deviceSecret() {
-  let s = store.get("device");
-  if (!/^[\w-]{16,64}$/.test(s)) { s = token(); store.set("device", s); }
-  return s;
-}
-
 /** The other tabs of this browser: renaming in one renames them all. */
 const tabs = "BroadcastChannel" in window ? new BroadcastChannel("wifi-drop") : { postMessage() {}, onmessage: null };
 tabs.onmessage = (e) => {
@@ -1219,15 +1209,14 @@ function onDevices(list) {
   announcePrivate();
 }
 
-/** Join this network's room. If it can't (offline, or the site isn't set up yet), try again in a little while. */
+/** Join this network's room. If it can't (offline), try again in a little while. */
 async function join() {
   const kind = deviceKind();
   const nick = store.get("nick");
   try {
     net = await connect({
-      device: deviceSecret(),
-      tab: SESSION,
       profile: { name: nick || defaultName(kind), named: !!nick, kind },
+      iceServers: RTC.iceServers,
       onHello: (hello) => { Object.assign(me, hello); },
       onDevices,
       onSignal: (msg) => onSignal(msg).catch((err) => console.warn(err)),
@@ -1238,12 +1227,10 @@ async function join() {
   } catch (e) {
     console.warn("join", e);
     setOnline(false);
-    // The site has no Ably key yet (set ABLY_API_KEY in Vercel, or in .env when testing): say so, plainly.
-    const notSetUp = /ABLY_API_KEY/.test(e.message);
-    $("liveText").textContent = notSetUp ? "Not set up" : "Offline";
-    $("live").title = notSetUp ? "The site needs its Ably key (ABLY_API_KEY): see the README" : "Can't reach Wi-Fi Drop right now";
-    toast(notSetUp ? "Wi-Fi Drop isn't set up yet: the site needs its Ably key (ABLY_API_KEY)" : "Couldn't reach Wi-Fi Drop: trying again…");
-    setTimeout(join, notSetUp ? 30000 : 8000);
+    $("liveText").textContent = "Offline";
+    $("live").title = "Can't reach Wi-Fi Drop right now: check the internet connection";
+    toast("Couldn't reach Wi-Fi Drop: trying again…");
+    setTimeout(join, 8000);
   }
 }
 
