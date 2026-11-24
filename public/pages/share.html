@@ -1,21 +1,25 @@
 <!-- title: Wi-Fi Drop · Share files | description: Send photos, videos and files between your phone and computers over your own Wi-Fi. Direct, encrypted, nothing uploaded. -->
 <section class="page-head">
   <h1>Send files across your Wi-Fi</h1>
-  <p class="muted">Everyone on your Wi-Fi who opens this site can send files to each other. Drop files here, choose who gets them, and they go straight from this device to theirs.</p>
+  <p class="muted">Everyone on your Wi-Fi who opens this site can send files to each other, straight from device to device.</p>
 </section>
 
-<!-- The windows of the Share page, arranged like a desktop collage (see .mosaic in style.css). -->
+<!-- The Share page: who's here and what they share come first; sharing is one slim bar (see .mosaic in style.css). -->
 <div class="mosaic mosaic-share">
-  <div class="win share m-share">
-    <div class="win-bar"><span class="win-title">Share files</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+  <!-- Share: a slim bar. On a computer, files can also be dropped anywhere on the page. -->
+  <section class="win sharebar m-share" aria-label="Share files">
     <label class="drop" id="drop" for="pick">
       <input id="pick" type="file" multiple hidden />
-      <span class="drop-drip" data-drip="idle" data-size="3" aria-hidden="true"></span>
-      <span class="drop-title pc-only">Drop files here to share</span>
-      <span class="drop-title phone-only">Share files from this device</span>
-      <span class="drop-hint pc-only">or <u>browse your files</u> · paste images with Ctrl+V</span>
-      <span class="drop-hint phone-only">Tap to pick photos, videos or files</span>
-      <span class="btn primary drop-btn phone-only" aria-hidden="true">Choose files</span>
+      <span class="drop-drip" data-drip="idle" data-size="2" aria-hidden="true"></span>
+      <span class="drop-text">
+        <span class="drop-title">Share files</span>
+        <span class="drop-hint pc-only">Click to choose, or drop files anywhere on this page</span>
+        <span class="drop-hint phone-only">Tap to pick photos, videos or files</span>
+      </span>
+      <span class="btn primary drop-btn" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span>Choose files</span>
+      </span>
     </label>
     <div class="send-row" id="sendToRow">
       <span class="send-row-label">
@@ -33,27 +37,52 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
       <span><b>Your files never touch a server.</b> They go straight from this device to the other one, encrypted. Nothing is uploaded, nothing is stored.</span>
     </p>
-  </div>
+  </section>
 
-  <!-- Everything the other devices share with this one, right away: no need to open each device. -->
+  <!-- Who's here: every device on this Wi-Fi with Wi-Fi Drop open -->
+  <section class="win here-card m-here" aria-live="polite">
+    <div class="win-bar">
+      <span class="win-title">On this Wi-Fi <span class="count" id="hereCount"></span></span>
+      <a class="link" href="/devices" data-nav>All devices</a>
+    </div>
+    <div class="win-body">
+      <div class="here" id="here"></div>
+      <p class="here-empty" id="hereEmpty"><span data-drip="walk" data-size="2" aria-hidden="true"></span><span><b>Just you so far.</b> Open this site on another phone, tablet or computer on the same Wi-Fi, or scan the code.</span></p>
+    </div>
+  </section>
+
+  <!-- Everything the other devices share with this one, right away -->
   <section class="win inbox m-inbox" id="inboxBlock" aria-live="polite">
     <div class="win-bar">
       <span class="win-title">Shared with you <span class="count" id="inboxCount"></span></span>
-      <a class="link" href="/devices" data-nav>By device</a>
     </div>
     <div class="win-body">
       <ul class="files" id="inbox"></ul>
       <div class="inbox-empty" id="inboxEmpty">
         <span data-drip="idle" data-size="3" aria-hidden="true"></span>
-        <p><b>Nothing yet</b>Files that anyone on your Wi-Fi shares appear here the moment they do.</p>
+        <p><b>Nothing shared with you yet</b>Files that anyone on your Wi-Fi shares appear here the moment they do.</p>
       </div>
     </div>
   </section>
 
-  <div class="win qr-card m-qr">
-    <div class="win-bar"><span class="win-title">Join from any device</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+  <!-- What this device shares, as a folder of file icons -->
+  <section class="win block folder m-mine" id="mineBlock">
+    <div class="win-bar"><span class="win-title">You&rsquo;re sharing <span class="count" id="mineCount"></span></span><button class="link" id="clearMine" type="button">Stop all</button></div>
     <div class="win-body">
-      <p class="muted">Everyone on this Wi-Fi is welcome, on a phone, tablet or computer: scan the code or open the address. People on other networks only ever see their own devices, never yours.</p>
+      <div class="list-head" id="mineHead" hidden>
+        <p class="keep-open" id="keepOpen" hidden>Shared while Wi-Fi Drop is open in this tab.</p>
+      </div>
+      <ul class="files icons-view" id="mine"></ul>
+      <p class="folder-empty"><b>Nothing yet</b>Use Share files above.</p>
+    </div>
+  </section>
+
+  {{ad2}}
+
+  <div class="win qr-card m-qr">
+    <div class="win-bar"><span class="win-title">Join from any device</span></div>
+    <div class="win-body">
+      <p class="muted">Everyone on this Wi-Fi is welcome: scan the code or open the address.</p>
       <div class="qr" id="qr"><span class="muted">Loading…</span></div>
       <div class="url-row">
         <code id="url">…</code>
@@ -68,34 +97,10 @@
     </div>
   </div>
 
-  <!-- What this device shares, as a folder window full of file icons -->
-  <section class="win block folder m-mine" id="mineBlock">
-    <div class="win-bar"><span class="win-title">Sharing from this device <span class="count" id="mineCount"></span></span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
-    <div class="win-body">
-      <div class="list-head" id="mineHead" hidden>
-        <p class="keep-open" id="keepOpen" hidden>Shared while Wi-Fi Drop is open in this tab, on any of its pages.</p>
-        <button class="btn small" id="clearMine" type="button">Stop sharing all</button>
-      </div>
-      <ul class="files icons-view" id="mine"></ul>
-      <p class="folder-empty"><b>Empty folder</b>Files you share appear here. Drop them in the Share files window.</p>
-    </div>
-  </section>
-
-  {{ad2}}
-
-  <a class="win teaser m-dev" href="/devices" data-nav id="teaser">
-    <div class="win-bar"><span class="win-title">Devices</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
-    <span class="win-body teaser-body">
-      <span class="teaser-drip" data-drip="walk" data-size="3" aria-hidden="true"></span>
-      <span class="info"><span class="name" id="teaserTitle">Other devices</span><span class="meta" id="teaserMeta">See who&rsquo;s here and download what they share</span></span>
-      <span class="btn small teaser-go">Open</span>
-    </span>
-  </a>
-
   {{ad3}}
 
   <section class="win fineprint m-readme">
-    <div class="win-bar"><span class="win-title">readme.txt</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <div class="win-bar"><span class="win-title">readme.txt</span></div>
     <div class="win-body">
       <p><b>No uploads, ever.</b> Files go directly from one device to another, encrypted. They never pass through our server, nor anyone else&rsquo;s: the website only helps the devices on your Wi-Fi find each other.</p>
       <p><b>Only your network.</b> You see the devices on your own Wi-Fi, and they see you. Nobody else does.</p>

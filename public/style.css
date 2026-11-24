@@ -202,11 +202,11 @@ body[data-page="share"] .page-head .muted { font-size: 14px; margin-top: 2px; }
 
 .mosaic { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @container center (min-width: 760px) {
-  /* "Shared with you" sits right beside the drop area, so incoming files are seen at once. */
-  body.is-pc .mosaic-share { grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "share inbox" "mine qr" "mine dev" "readme readme"; }
-  body.is-pc .m-share { grid-area: share; align-self: stretch; }
-  body.is-pc .m-inbox { grid-area: inbox; align-self: stretch; display: flex; flex-direction: column; }
-  body.is-pc .m-inbox .win-body { flex: 1; min-height: 0; overflow: auto; max-height: 340px; }
+  /* Sharing is a slim bar; who's here and what's shared with you take the space. */
+  body.is-pc .mosaic-share { grid-template-columns: minmax(0, 1fr) 320px; grid-template-areas: "share share" "here here" "inbox mine" "inbox qr" "readme readme"; }
+  body.is-pc .m-share { grid-area: share; }
+  body.is-pc .m-here { grid-area: here; }
+  body.is-pc .m-inbox { grid-area: inbox; align-self: stretch; }
   body.is-pc .m-qr { grid-area: qr; }
   body.is-pc .m-mine { grid-area: mine; }
   body.is-pc .m-dev { grid-area: dev; }
@@ -547,3 +547,45 @@ body[data-page="share"] .page-head .muted { font-size: 14px; margin-top: 2px; }
 /* Compact Download buttons in "Shared with you" (the name gets the room) */
 .inbox .download { width: 36px; padding: 0; }
 .inbox .download span { display: none; }
+
+/* ── Share page, people first ─────────────────────────────────────────────────────────────────────────────── */
+
+/* The slim share bar */
+.sharebar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 12px 0; }
+body[data-page="share"] .sharebar .drop { flex: 1 1 380px; flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 0; margin: 0; padding: 10px 12px; text-align: left; border-width: 1.5px; }
+.sharebar .drop-drip { margin: 0; }
+.drop-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.sharebar .drop-title { font-size: 16px; }
+.sharebar .drop-hint { font-size: 13px; }
+.sharebar .drop-btn { margin: 0 0 0 auto; flex-shrink: 0; }
+.sharebar .send-row { flex: 1 1 300px; padding: 0; }
+.sharebar .no-server { flex: 0 0 calc(100% + 24px); margin: 0 -12px; padding: 10px 16px; font-size: 13px; }
+@media (max-width: 520px) { .sharebar .drop-btn span { display: none; } .sharebar .drop-btn { width: 40px; padding: 0; } }
+
+/* Who's here: a chip per device */
+.here-card .win-bar .link, .folder .win-bar .link { font-size: 13px; text-decoration: none; }
+.here-card .win-body { padding: 12px 16px 14px; }
+.here { display: flex; flex-wrap: wrap; gap: 8px; }
+.here:empty { display: none; }
+.here-chip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 5px 12px 5px 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); text-decoration: none; transition: border-color .15s, background .15s; }
+.here-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.here-chip .avatar { width: 30px; height: 30px; font-size: 11.5px; }
+.here-chip .avatar-kind { width: 15px; height: 15px; right: -3px; bottom: -3px; }
+.here-chip .avatar-kind svg { width: 9px; height: 9px; }
+.here-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.here-files { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.here-files.none { color: var(--muted); background: var(--soft); font-weight: 600; }
+.here-empty { display: none; align-items: center; gap: 12px; margin: 0; color: var(--muted); font-size: 14px; }
+.here-empty b { color: var(--text); }
+.here:empty + .here-empty { display: flex; }
+
+/* "Shared with you" is the main area now */
+.m-inbox .win-body { max-height: 460px; overflow: auto; }
+.inbox .download { width: auto; padding: 0 14px; }
+.inbox .download span { display: inline; }
+@media (max-width: 520px) { .inbox .download { width: 38px; padding: 0; } .inbox .download span { display: none; } }
+.m-mine .win-body { padding: 12px; }
+.m-mine .icons-view { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+/* Phones, Share page: devices and shared files first; the ad that's usually at the top goes below them. */
+body[data-page="share"] .center > .ad-inline[data-ad="ad1"] { order: 1; }
+body[data-page="share"] .center > .ad-inline[data-ad="ad4"] { order: 2; }

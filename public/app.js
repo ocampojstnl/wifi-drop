@@ -1166,6 +1166,24 @@ function announcePrivate() {
   for (const [name, files] of fresh) toast(`${name} shared ${files.length === 1 ? files[0] : `${files.length} files`}${where}`);
 }
 
+/** "On this Wi-Fi" (Share page): a chip for every other device here, with how many files it shares with you. */
+function renderHere() {
+  const others = otherDevices();
+  $("hereCount").textContent = others.length || "";
+  const box = $("here");
+  box.replaceChildren();
+  for (const p of others) {
+    const a = document.createElement("a");
+    a.className = "here-chip";
+    a.href = "/devices";
+    a.dataset.nav = "";
+    a.title = `${p.name}: see and download what it shares, or send it files`;
+    const n = p.offers.length;
+    a.innerHTML = `${avatar(p)}<span class="here-name">${esc(p.name)}</span><span class="here-files${n ? "" : " none"}">${n ? plural(n, "file") : "no files"}</span>`;
+    box.append(a);
+  }
+}
+
 /** "Shared with you" (Share page): every file the other devices share with this one, ready to download. */
 function renderInbox() {
   const ul = $("inbox");
@@ -1232,6 +1250,7 @@ function onDevices(list) {
   if (key !== deviceKey && !document.activeElement?.closest?.("#mine")) { deviceKey = key; renderMine(); }
   renderSummary();
   announcePrivate();
+  renderHere();
   renderInbox();
 }
 
