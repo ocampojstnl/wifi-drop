@@ -32,7 +32,11 @@ npm install
 npm start
 ```
 
-It opens `http://localhost:4040`. Phones on the same Wi-Fi can open the address it prints. When testing like this, every device on your home network counts as one network.
+It opens `http://localhost:4040` on this PC. **Other devices** (phones, other computers) open the **https** address it prints, like `https://192.168.1.20:4443`, or scan the QR code on the page:
+
+- Browsers only allow the encryption Wi-Fi Drop needs on secure pages, so the other devices need the `https://` address. A plain `http://192.168…` address shows "Needs https".
+- The certificate is made on your PC, so each device warns once that the connection isn't private: tap **Advanced → Proceed**.
+- When testing like this, every device on your home network counts as one network.
 
 ## Ads
 

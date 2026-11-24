@@ -32,7 +32,9 @@ export async function connect({ profile, iceServers, onHello, onDevices, onSigna
   if (!res.ok) throw new Error("Couldn't reach Wi-Fi Drop");
   const { room: roomId, password } = await res.json();
 
-  const room = joinRoom({ appId: `wifi-drop:${location.host}`, password, rtcConfig: { iceServers } }, roomId);
+  // One namespace for every address the site is opened on (localhost, the PC's network address, the live domain):
+  // the secret room name is what keeps networks apart.
+  const room = joinRoom({ appId: "wifi-drop.v1", password, rtcConfig: { iceServers } }, roomId);
   const self = await room.getSelf();
   const did = self.userId;
   const myId = tabId(did, self.peerId);

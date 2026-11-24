@@ -331,7 +331,8 @@ async function loadInfo() {
   document.body.classList.toggle("is-pc", deviceKind() === "pc");
   setupAds(config.ads);
   // The join code: the site's own address. Anyone on the same Wi-Fi who opens it lands in this same room.
-  link = `${location.origin}/`;
+  // (When testing on a PC, the local server says which secure address the other devices should open instead.)
+  link = config.joinUrl || `${location.origin}/`;
   $("qr").innerHTML = `<img alt="QR code to open Wi-Fi Drop on another device" src="/api/qr?text=${encodeURIComponent(link)}" />`;
   $("url").textContent = link.replace(/^https?:\/\//, "");
 }
