@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test": "node --test tests/unit.test.mjs",
+    "test:e2e": "node tests/e2e.mjs"
   },
   "engines": {
     "node": ">=20"

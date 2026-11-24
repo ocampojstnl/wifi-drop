@@ -470,13 +470,6 @@ body[data-page="share"] .page-head .muted { font-size: 14px; margin-top: 2px; }
 .bubble { position: relative; margin-bottom: 18px; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--bg); box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 500; }
 .bubble::before { content: ""; position: absolute; left: -6px; bottom: 12px; width: 12px; height: 12px; background: var(--text); transform: rotate(45deg); }
 
-/* ── The locked page ──────────────────────────────────────────────────────────────────────────────────────── */
-
-.locked { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-.locked .card { max-width: 420px; padding: 28px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.locked .mark { display: none; }
-.locked h1 { font-size: 22px; }
-
 /* ── Drip, the pixel mascot (see mascot.js) ───────────────────────────────────────────────────────────────── */
 
 .mascot { --px: 3px; display: inline-block; line-height: 0; vertical-align: bottom; }
