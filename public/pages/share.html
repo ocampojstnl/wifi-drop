@@ -35,6 +35,21 @@
     </p>
   </div>
 
+  <!-- Everything the other devices share with this one, right away: no need to open each device. -->
+  <section class="win inbox m-inbox" id="inboxBlock" aria-live="polite">
+    <div class="win-bar">
+      <span class="win-title">Shared with you <span class="count" id="inboxCount"></span></span>
+      <a class="link" href="/devices" data-nav>By device</a>
+    </div>
+    <div class="win-body">
+      <ul class="files" id="inbox"></ul>
+      <div class="inbox-empty" id="inboxEmpty">
+        <span data-drip="idle" data-size="3" aria-hidden="true"></span>
+        <p><b>Nothing yet</b>Files that anyone on your Wi-Fi shares appear here the moment they do.</p>
+      </div>
+    </div>
+  </section>
+
   <div class="win qr-card m-qr">
     <div class="win-bar"><span class="win-title">Join from any device</span><span class="win-ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
     <div class="win-body">

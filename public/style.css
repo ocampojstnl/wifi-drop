@@ -202,8 +202,11 @@ body[data-page="share"] .page-head .muted { font-size: 14px; margin-top: 2px; }
 
 .mosaic { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @container center (min-width: 760px) {
-  body.is-pc .mosaic-share { grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "share qr" "mine dev" "readme readme"; }
+  /* "Shared with you" sits right beside the drop area, so incoming files are seen at once. */
+  body.is-pc .mosaic-share { grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "share inbox" "mine qr" "mine dev" "readme readme"; }
   body.is-pc .m-share { grid-area: share; align-self: stretch; }
+  body.is-pc .m-inbox { grid-area: inbox; align-self: stretch; display: flex; flex-direction: column; }
+  body.is-pc .m-inbox .win-body { flex: 1; min-height: 0; overflow: auto; max-height: 340px; }
   body.is-pc .m-qr { grid-area: qr; }
   body.is-pc .m-mine { grid-area: mine; }
   body.is-pc .m-dev { grid-area: dev; }
@@ -522,3 +525,25 @@ body[data-page="share"] .page-head .muted { font-size: 14px; margin-top: 2px; }
   *, .mascot * { animation: none !important; transition: none !important; }
   .mascot .m-eyes-blink, .mascot .m-feet-b { display: none !important; }
 }
+
+/* "Shared with you": every file other devices share with this one */
+.inbox .win-bar .link { font-size: 13px; text-decoration: none; }
+.inbox .win-body { padding: 12px; }
+.inbox .files { gap: 6px; }
+.inbox .file { padding: 8px 10px; gap: 10px; }
+.inbox .file.fresh { animation: fresh 2.4s ease-out; }
+@keyframes fresh { from { background: var(--accent-soft); border-color: var(--accent); } }
+.inbox .from { color: var(--text); font-weight: 500; }
+.inbox .download { height: 34px; padding: 0 12px; }
+.inbox:has(#inbox:not(:empty)) .inbox-empty { display: none; }
+.inbox-empty { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 18px 10px; color: var(--muted); font-size: 13.5px; }
+.inbox-empty p { margin: 0; }
+.inbox-empty b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+@media (prefers-reduced-motion: reduce) { .inbox .file.fresh { animation: none; } }
+
+/* Keep the middle within its column (a one-line subtitle mustn't widen it) */
+.center > * { min-width: 0; }
+.page-head .muted { max-width: 100%; }
+/* Compact Download buttons in "Shared with you" (the name gets the room) */
+.inbox .download { width: 36px; padding: 0; }
+.inbox .download span { display: none; }

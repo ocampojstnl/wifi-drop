@@ -1144,21 +1144,45 @@ function receive(peer, file, sink) {
 
 // ── Joining ────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** Files other devices shared with this one only: say so once (once per tab, not again on every page). */
+/** Files that just appeared (to highlight them in "Shared with you"). */
+let freshFiles = new Set();
+/** New files from other devices: say so once (once per tab, not again on every page). */
 const seenPrivate = new Set(store.get("seenPrivate", sessionStorage).split("\n").filter(Boolean));
 function announcePrivate() {
-  const fresh = new Map(); // sender name → count
+  const fresh = new Map(); // sender name → the new files' names
+  freshFiles = new Set();
   for (const p of otherDevices()) {
     for (const o of p.offers) {
       const key = `${p.did}/${o.fid}`;
-      if (!o.private || seenPrivate.has(key)) continue;
+      if (seenPrivate.has(key)) continue;
       seenPrivate.add(key);
-      fresh.set(p.name, (fresh.get(p.name) ?? 0) + 1);
+      freshFiles.add(key);
+      fresh.set(p.name, [...(fresh.get(p.name) ?? []), o.name]);
     }
   }
   if (!fresh.size) return;
-  store.set("seenPrivate", [...seenPrivate].slice(-200).join("\n"), sessionStorage);
-  for (const [name, n] of fresh) toast(`${name} shared ${n === 1 ? "a file" : `${n} files`} with you: see Devices`);
+  store.set("seenPrivate", [...seenPrivate].slice(-300).join("\n"), sessionStorage);
+  const where = document.body.dataset.page === "share" ? "" : ": see Share";
+  for (const [name, files] of fresh) toast(`${name} shared ${files.length === 1 ? files[0] : `${files.length} files`}${where}`);
+}
+
+/** "Shared with you" (Share page): every file the other devices share with this one, ready to download. */
+function renderInbox() {
+  const ul = $("inbox");
+  const rows = otherDevices().flatMap((p) => p.offers.map((f) => ({ p, f })));
+  $("inboxCount").textContent = rows.length || "";
+  ul.replaceChildren();
+  for (const { p, f } of rows) {
+    const li = document.createElement("li");
+    li.className = `file grab${freshFiles.has(`${p.did}/${f.fid}`) ? " fresh" : ""}`;
+    li.title = `Download ${f.name}`;
+    li.innerHTML = `${thumb(f.name, f.type)}
+      <div class="info"><span class="name" title="${esc(f.name)}">${esc(f.name)}</span>
+        <span class="meta">${size(f.size)} · from <span class="from">${esc(p.name)}</span>${f.private ? ` · <span class="for-you-inline">${ICON.lock}Just you</span>` : ""}</span></div>
+      <div class="actions"><button class="btn primary download" type="button" aria-label="Download ${esc(f.name)}">${ICON.download}<span>Download</span></button></div>`;
+    li.onclick = () => receiveOne(p, f);
+    ul.append(li);
+  }
 }
 
 /** What every page shows of the network: the Devices badge, "Sharing N files", the Share page's summary. */
@@ -1208,6 +1232,7 @@ function onDevices(list) {
   if (key !== deviceKey && !document.activeElement?.closest?.("#mine")) { deviceKey = key; renderMine(); }
   renderSummary();
   announcePrivate();
+  renderInbox();
 }
 
 /** Join this network's room. If it can't (offline), try again in a little while. */
