@@ -589,3 +589,63 @@ body[data-page="share"] .sharebar .drop { flex: 1 1 380px; flex-direction: row; 
 /* Phones, Share page: devices and shared files first; the ad that's usually at the top goes below them. */
 body[data-page="share"] .center > .ad-inline[data-ad="ad1"] { order: 1; }
 body[data-page="share"] .center > .ad-inline[data-ad="ad4"] { order: 2; }
+
+/* ── Share page on a computer: everything on one screen, like an app ──────────────────────────────────────── */
+@media (min-width: 900px) {
+  /* The heading stays for search engines and screen readers, not on screen: the logo already says it. */
+  body.is-pc[data-page="share"] .page-head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  body.is-pc[data-page="share"] .desktop { padding-top: 14px; padding-bottom: 14px; }
+  body.is-pc[data-page="share"] .center, body.is-pc[data-page="share"] .mosaic { gap: 12px; }
+
+  /* Share bar: one row, the promise as a short line under it */
+  body.is-pc .sharebar { padding: 10px 12px; gap: 8px 14px; }
+  body[data-page="share"].is-pc .sharebar .drop { flex: 1 1 340px; padding: 6px 8px 6px 10px; }
+  body.is-pc .sharebar .drop-btn { height: 34px; }
+  body.is-pc .sharebar .send-pick { height: 34px; }
+  body.is-pc .sharebar .no-server { flex: 0 0 100%; margin: 0; padding: 0 2px; border: 0; background: none; font-size: 12.5px; align-items: center; }
+  body.is-pc .sharebar .no-server svg { width: 14px; height: 14px; margin: 0; }
+
+  /* Who's here: one row (label, chips, link) */
+  body.is-pc .here-card .win-bar { display: none; }
+  body.is-pc .here-card .win-body { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 16px; }
+  body.is-pc .here-card .win-body::before { content: "On this Wi-Fi"; font-weight: 600; font-size: 14px; white-space: nowrap; }
+  body.is-pc .here-card .win-body::after { content: ""; flex: 1; order: 2; }
+  body.is-pc .here-card .here { order: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  body.is-pc .here-card .here-empty { order: 1; font-size: 13.5px; }
+  body.is-pc .here-card .here-empty [data-drip] { display: none; }
+  body.is-pc .here-all { order: 3; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+
+  /* The main row fills the rest of the screen; "Shared with you" scrolls inside if it's long */
+  body.is-pc[data-page="share"] .m-inbox { display: flex; flex-direction: column; height: max(300px, calc(100vh - 262px)); }
+  body.is-pc[data-page="share"] .m-inbox .win-body { flex: 1; min-height: 0; max-height: none; overflow: auto; }
+  body.is-pc[data-page="share"] .win-bar { min-height: 42px; padding-top: 6px; padding-bottom: 6px; }
+  body.is-pc[data-page="share"] .inbox-empty { padding: 28px 10px; }
+
+  /* Beside it: your files and a smaller join code */
+  body.is-pc[data-page="share"] .m-mine .folder-empty { padding: 10px; font-size: 13px; }
+  body.is-pc[data-page="share"] .qr-card .win-body { padding: 10px 14px 12px; }
+  body.is-pc[data-page="share"] .qr-card .muted { font-size: 12.5px; }
+  body.is-pc[data-page="share"] .qr { max-width: 128px; margin: 8px auto; padding: 6px; }
+  body.is-pc[data-page="share"] .mosaic-share { grid-template-areas: "share share" "here here" "inbox mine" "inbox qr" "readme readme"; grid-template-rows: auto auto auto 1fr auto; }
+}
+
+/* Side ads: two squares per side, so all four fit on the screen; the columns stay in view while scrolling. */
+@media (min-width: 1180px) { body.has-ads .rail { position: sticky; top: 72px; gap: 18px; } }
+.rail .ad-box .ad-body { min-height: 250px; }
+/* On a computer the Share page's promise is already in the share bar: the readme box would only push things off screen. */
+@media (min-width: 900px) { body.is-pc[data-page="share"] .m-readme { display: none; } }
+.here-all { display: none; }
+@media (min-width: 900px) { body.is-pc .here-card .here-all { display: inline; } }
+@media (min-width: 900px) {
+  body.is-pc[data-page="share"] .m-inbox { height: max(280px, calc(100vh - 286px)); }
+  body.is-pc[data-page="share"] .m-mine .list-head { display: none; }
+  body.is-pc[data-page="share"] .m-mine .win-body { padding: 10px; max-height: 210px; overflow: auto; }
+  body.is-pc[data-page="share"] .m-mine .icons-view { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  body.is-pc[data-page="share"] .m-mine .icons-view .file { padding: 8px 6px 6px; gap: 4px; }
+  body.is-pc[data-page="share"] .m-mine .icons-view .thumb, body.is-pc[data-page="share"] .m-mine .icons-view .thumb svg { width: 30px; height: 36px; }
+  body.is-pc[data-page="share"] .m-mine .icons-view .thumb b { margin-top: 9px; font-size: 7.5px; }
+  body.is-pc[data-page="share"] .m-mine .icons-view .name { font-size: 12px; }
+  body.is-pc[data-page="share"] .m-mine .icons-view .meta { font-size: 11px; margin-top: 2px; }
+  body.is-pc[data-page="share"] .qr-card .muted { display: none; }
+  body.is-pc[data-page="share"] .qr { max-width: 112px; margin: 0 auto 8px; }
+}
