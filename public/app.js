@@ -1227,6 +1227,14 @@ async function join() {
   } catch (e) {
     console.warn("join", e);
     setOnline(false);
+    // Opened on a plain http:// address (other than localhost): browsers switch off the encryption Wi-Fi Drop needs,
+    // so it can never connect there. Say so, instead of retrying for ever.
+    if (!window.isSecureContext) {
+      $("liveText").textContent = "Needs https";
+      $("live").title = "Open Wi-Fi Drop on its https:// address: browsers turn off the encryption it needs on plain http";
+      toast("Open Wi-Fi Drop on its https:// address (your live site): browsers block the encryption it needs on plain http");
+      return;
+    }
     $("liveText").textContent = "Offline";
     $("live").title = "Can't reach Wi-Fi Drop right now: check the internet connection";
     toast("Couldn't reach Wi-Fi Drop: trying again…");

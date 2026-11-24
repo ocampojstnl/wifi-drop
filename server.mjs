@@ -83,7 +83,9 @@ server.listen(PORT, "0.0.0.0", () => {
   const lan = lanAddress();
   console.log("\n  Wi-Fi Drop (local test of the website)");
   console.log(`  On this PC:     http://localhost:${PORT}`);
-  if (lan) console.log(`  Other devices:  http://${lan}:${PORT}`);
+  // Phones can't use this one: browsers turn off the encryption Wi-Fi Drop needs on a plain http:// network address
+  // (only localhost is allowed). To try it with other devices, use the deployed https:// site.
+  if (lan) console.log(`  Other devices:  use your Vercel site (https://…). Plain http://${lan}:${PORT} won't connect in their browsers.`);
   console.log("  Ctrl+C stops it.\n");
   if (!process.env.NO_OPEN) {
     const url = `http://localhost:${PORT}`;
