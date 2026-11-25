@@ -75,7 +75,7 @@ try {
   check(/Alice/.test(names), "B lists Alice's laptop on this Wi-Fi", names);
 
   // B downloads it (kept in memory, as on a phone: headless Chrome can't show a save dialog).
-  await B.js(`window.showSaveFilePicker = undefined; window.showDirectoryPicker = undefined; document.querySelector("#inbox .file .download")?.click()`);
+  await B.js(`window.showSaveFilePicker = undefined; window.showDirectoryPicker = undefined; [...document.querySelectorAll("#inbox .file")].find((f) => /holiday-video/.test(f.textContent))?.querySelector(".download")?.click()`);
   const status = await until(async () => { const s = await B.js(`[...document.querySelectorAll("#transfers .up-pct")].map((e) => e.textContent).join(" | ")`); return /Received|Couldn't|Stopped|Incomplete/.test(s) && s; }, 40000);
   check(/Received/.test(status || ""), "B receives the file", status || "no result within 40s");
   const intact = await B.js(`(async () => { const a = document.querySelector("#transfers .up-actions a"); if (!a) return "no file";

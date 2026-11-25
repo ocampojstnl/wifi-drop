@@ -141,6 +141,31 @@
     <span class="bubble" id="toastText"></span>
   </div>
 
+  <!--
+    If Wi-Fi Drop can't start on this device (a browser too old, an error), say why instead of showing "Connecting"
+    for ever: the reason, the step it got to, and the browser. Old-style code on purpose, so any browser runs it.
+  -->
+  <script>
+    (function () {
+      var problem = "";
+      function brief(e) { return String((e && (e.message || e.reason && e.reason.message || e.reason)) || e).slice(0, 160); }
+      window.wifiDropFail = function (e) { if (!problem) problem = brief(e); };
+      window.addEventListener("error", function (e) { if (!problem && e.message) problem = brief(e); });
+      window.addEventListener("unhandledrejection", function (e) { if (!problem) problem = brief(e.reason); });
+      if (!("noModule" in document.createElement("script"))) problem = "this browser is too old to run Wi-Fi Drop";
+      setTimeout(function () {
+        var text = document.getElementById("liveText");
+        if (!text || text.textContent !== "Connecting") return; // started fine
+        var ua = navigator.userAgent, m = ua.match(/(SamsungBrowser|HuaweiBrowser|MiuiBrowser|EdgA?|Firefox|CriOS|Chrome|Version)\/[\d.]+/);
+        var why = problem ? "Problem: " + problem : "Stuck at: " + (window.wifiDropStage || "loading the page");
+        var msg = "Wi-Fi Drop can't start here. " + why + " (browser: " + (m ? m[0] : ua.slice(0, 60)) + "). Try updating the browser, or use Chrome.";
+        text.textContent = "Can't start";
+        document.getElementById("live").title = msg;
+        var toast = document.getElementById("toast"), t = document.getElementById("toastText");
+        if (toast && t) { t.textContent = msg; toast.hidden = false; }
+      }, 15000);
+    })();
+  </script>
   <script type="module" src="/static/app.js"></script>
 </body>
 </html>

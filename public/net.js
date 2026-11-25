@@ -55,18 +55,24 @@ const cleanList = (list) => (Array.isArray(list) ? list.slice(0, MAX_LISTED).map
  *   onOnline(boolean)                    connected to the relays (needed only to find devices that arrive later)
  */
 export async function connect({ profile, iceServers, onHello, onDevices, onSignal, onGrant, onOnline }) {
+  const stage = (name) => { window.wifiDropStage = name; };
+  stage("finding this network's address");
   // Learned once per tab (it takes a moment) and remembered across its pages.
   let ipv4 = "";
   try { ipv4 = sessionStorage.getItem("wifi-drop:v4") || ""; } catch {}
   if (!ipv4) { ipv4 = await publicIPv4(iceServers); try { if (ipv4) sessionStorage.setItem("wifi-drop:v4", ipv4); } catch {} }
+  stage("asking the site for this network's room");
   const res = await fetch("/api/room" + (ipv4 ? "?v4=" + encodeURIComponent(ipv4) : ""), { cache: "no-store" });
   if (!res.ok) throw new Error("Couldn't reach Wi-Fi Drop");
   const { room: roomId, password } = await res.json();
 
   // One namespace for every address the site is opened on (localhost, the PC's network address, the live domain):
   // the secret room name is what keeps networks apart.
+  stage("joining the room");
   const room = joinRoom({ appId: "wifi-drop.v1", password, rtcConfig: { iceServers }, relayConfig: { redundancy: RELAYS } }, roomId);
+  stage("creating this device's identity");
   const self = await room.getSelf();
+  stage("connected");
   const did = self.userId;
   const myId = tabId(did, self.peerId);
 

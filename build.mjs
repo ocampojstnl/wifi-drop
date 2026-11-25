@@ -2,7 +2,7 @@
 // settings (config.json), and ads.txt once there's an AdSense publisher id. Run: npm run build
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt, bundleTrystero } from "./lib/pages.mjs";
+import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt, bundleTrystero, lowerJs } from "./lib/pages.mjs";
 
 const DIST = path.join(ROOT, "dist");
 await fs.rm(DIST, { recursive: true, force: true });
@@ -16,6 +16,12 @@ for (const pathname of Object.keys(PAGES)) {
 
 // Static files (styles, scripts, fonts), plus Trystero (finds the other devices) bundled for browsers.
 await fs.cp(PUBLIC, path.join(DIST, "static"), { recursive: true, filter: (src) => !src.includes(`${path.sep}pages`) && !src.endsWith("layout.html") });
+// Browser code rewritten for older browsers (see lowerJs in lib/pages.mjs).
+for (const name of await fs.readdir(path.join(DIST, "static"))) {
+  if (!name.endsWith(".js")) continue;
+  const file = path.join(DIST, "static", name);
+  await fs.writeFile(file, await lowerJs(await fs.readFile(file, "utf8")));
+}
 await fs.mkdir(path.join(DIST, "static", "vendor"), { recursive: true });
 await fs.writeFile(path.join(DIST, "static", "vendor", "trystero.js"), await bundleTrystero());
 await fs.copyFile(path.join(PUBLIC, "favicon.svg"), path.join(DIST, "favicon.svg"));

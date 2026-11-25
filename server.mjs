@@ -16,7 +16,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
-import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt, bundleTrystero } from "./lib/pages.mjs";
+import { PAGES, PUBLIC, ROOT, renderPage, siteConfig, adsTxt, bundleTrystero, lowerJs } from "./lib/pages.mjs";
 import room from "./api/room.js";
 import qr from "./api/qr.js";
 
@@ -79,6 +79,11 @@ async function handle(req, res) {
     if (p.startsWith("/static/")) {
       const file = path.join(PUBLIC, decodeURIComponent(p.slice("/static/".length)));
       if (!file.startsWith(PUBLIC + path.sep)) return send(res, 404, "Not found");
+      // Browser code goes out rewritten for older browsers, as the Vercel build does (lowerJs in lib/pages.mjs).
+      if (file.endsWith(".js")) {
+        try { return send(res, 200, await lowerJs(await fsp.readFile(file, "utf8")), "text/javascript; charset=utf-8"); }
+        catch { return send(res, 404, "Not found"); }
+      }
       return serveFile(res, file);
     }
     send(res, 404, "Not found");
@@ -117,7 +122,21 @@ const onError = (port) => (e) => {
   process.exit(1);
 };
 
-const plain = http.createServer(handle);
+/**
+ * The plain http address only works on this PC (localhost). Other devices opening it (by typing the address, or an
+ * old bookmark) are sent to the secure address instead, so they never get stuck on "Needs https".
+ */
+function plainHandler(req, res) {
+  const host = String(req.headers.host ?? "").replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
+  const onThisPc = host === "localhost" || host === "::1" || /^127\./.test(host);
+  if (!onThisPc && LAN) {
+    res.writeHead(302, { location: `https://${host || LAN}:${HTTPS_PORT}${req.url ?? "/"}`, "cache-control": "no-cache" });
+    return res.end();
+  }
+  return handle(req, res);
+}
+
+const plain = http.createServer(plainHandler);
 plain.on("error", onError(PORT));
 const secure = https.createServer(await certificate(), handle);
 secure.on("error", onError(HTTPS_PORT));

@@ -1291,9 +1291,13 @@ if (!window.RTCPeerConnection) {
   $("noPeers").hidden = false;
   $("noPeers").innerHTML = "<p>This browser can't send files directly. Use Chrome, Edge, Safari or Firefox.</p>";
 }
-await restore(); // this tab's files, from its previous page
-renderMine();
-renderSendTo();
-renderSummary();
-await loadInfo();
-join();
+// Started from a function rather than with top-level await, which older tablet and phone browsers can't run.
+(async () => {
+  window.wifiDropStage = "starting";
+  await restore(); // this tab's files, from its previous page
+  renderMine();
+  renderSendTo();
+  renderSummary();
+  await loadInfo();
+  join();
+})().catch((e) => window.wifiDropFail?.(e));
