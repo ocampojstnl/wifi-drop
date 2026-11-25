@@ -64,6 +64,13 @@ async function handle(req, res) {
     if (PAGES[p] && req.method === "GET") return send(res, 200, await renderPage(p), "text/html; charset=utf-8");
     if (p === "/api/room") return room(req, res);
     if (p === "/api/qr") return qr(req, res);
+    // Local testing only: a device that can't connect reports why here, in this window (the live site has no such route).
+    if (p === "/api/report" && req.method === "POST") {
+      let body = "";
+      for await (const chunk of req) { body += chunk; if (body.length > 4000) break; }
+      console.log(`  [device problem] ${body.slice(0, 2000)}`);
+      return send(res, 204, "");
+    }
     if (p === "/config.json") {
       // On this computer: the ad spaces show as placeholders (ADS_PREVIEW=0 hides them), and the join code points
       // other devices at the secure address.

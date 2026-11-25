@@ -1272,6 +1272,9 @@ async function join() {
   } catch (e) {
     console.warn("join", e);
     setOnline(false);
+    const why = String(e?.message || e).slice(0, 200);
+    // On the local test server, tell it why (it prints it), so problems on phones and tablets can be seen on the PC.
+    if (config.joinUrl) fetch("/api/report", { method: "POST", body: JSON.stringify({ error: why, stage: window.wifiDropStage, stack: String(e?.stack || "").slice(0, 600), browser: navigator.userAgent, secure: window.isSecureContext }) }).catch(() => {});
     // Opened on a plain http:// address (other than localhost): browsers switch off the encryption Wi-Fi Drop needs,
     // so it can never connect there. Say so, instead of retrying for ever.
     if (!window.isSecureContext) {
@@ -1281,8 +1284,8 @@ async function join() {
       return;
     }
     $("liveText").textContent = "Offline";
-    $("live").title = "Can't reach Wi-Fi Drop right now: check the internet connection";
-    toast("Couldn't reach Wi-Fi Drop: trying again…");
+    $("live").title = `Can't connect right now (${why})`;
+    toast("Couldn't connect (" + why + "): trying again…");
     setTimeout(join, 8000);
   }
 }
