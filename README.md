@@ -11,7 +11,7 @@ A website where everyone on the same Wi-Fi can send photos, videos and files to 
 
 More:
 - Share with everyone in the room, or only with chosen devices: the others don't even see the file. Recipients can pass access on if you allow it.
-- Shared files stay in the browser tab while Wi-Fi Drop is open in it (on any of its pages). Close the tab and they disappear from every device.
+- Shared files stay in the browser tab while Wi-Fi Drop is open in it (on any of its pages, and through reloads) until you stop sharing them. Close the tab and they disappear from every device; the browser's copy is cleared on the next visit.
 - Every tab of one browser counts as one device (Trystero gives each browser a signed identity nobody else can use). A private/incognito window is a separate device: it starts with no stored identity on purpose, and nothing a website can do will link it to the normal window.
 - Phones keep a received file in memory until you tap Save (they have no way to write straight to disk), so very large files (above about 1–2 GB) may not fit there. Computers with Chrome or Edge save straight to disk, with no limit.
 

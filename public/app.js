@@ -152,7 +152,8 @@ function token() {
 // Every click loads a new page, and a page forgets everything when it goes. So the files this tab shares (and
 // received files waiting for their Save tap) are kept in the browser's own storage, under this tab's id: the next
 // page picks them up and goes on sharing them, under the same id, so for the other devices nothing changes.
-// Closing the tab deletes them (and the next visit clears anything a crashed tab left behind).
+// Reloading keeps them too: they stay until the person removes them ("Stop sharing", "Stop all"). Once the tab is
+// closed for good, the next visit clears what it left behind.
 
 /** This tab, across its pages: session storage lasts as long as the tab, and no longer. */
 const SESSION = (() => {
@@ -227,9 +228,7 @@ async function restore() {
     const files = (await idb("files", "readonly", (st) => st.getAll())) ?? [];
     const acc = new Map(((await idb("access", "readonly", (st) => st.getAll())) ?? []).map((a) => [a.fid, a]));
     for (const t of tabs) if (!open.has(t.session)) idb("tabs", "readwrite", (st) => st.delete(t.session)).catch(() => {});
-    // This tab left Wi-Fi Drop (for another site) and came back: what it shared then is gone.
-    const left = store.get("left", sessionStorage) === "1";
-    if (left) { open.delete(SESSION); sessionStorage.removeItem("left"); }
+    try { sessionStorage.removeItem("left"); } catch {} // from older versions, which forgot files on reload
     for (const r of files.sort((a, b) => a.added - b.added)) {
       if (!open.has(r.session)) { forget(r.fid); continue; }
       if (r.session !== SESSION) continue; // another open tab's
@@ -246,12 +245,6 @@ async function restore() {
   try { defaultAccess = JSON.parse(store.get("defaultAccess", sessionStorage)) ?? defaultAccess; } catch {}
 }
 
-/** The tab is closing: its files go. */
-function forgetTab() {
-  for (const fid of mine.keys()) forget(fid);
-  for (const fid of receivedKept) forget(fid);
-  idb("tabs", "readwrite", (st) => st.delete(SESSION)).catch(() => {});
-}
 /** Received files kept for their Save tap, across pages. */
 const receivedKept = new Set();
 
@@ -661,14 +654,13 @@ window.addEventListener("beforeunload", (e) => {
   if (incoming || (!toNextPage && [...mine.keys()].some((fid) => notKept.has(fid)))) e.preventDefault();
 });
 
-// The tab is closing (not moving to another page): its files are gone, so tell the others at once and they vanish
-// from every device's list right away, and delete what this tab kept.
+// The page is going and it may not come back (closing, or another site): leave at once, so its files vanish from
+// every device's list right away. Nothing is deleted here: a page can't tell a reload (pull-to-refresh, the reload
+// button) from closing, and a reload must keep everything. The tab's files stay until the person removes them;
+// once the tab is really closed, the next visit clears what it left (restore, above).
 window.addEventListener("pagehide", () => {
   if (toNextPage || !net) return;
   net.leave();
-  // Deleting may not finish as the page goes: note it (instantly), so coming back in this tab doesn't revive them.
-  store.set("left", "1", sessionStorage);
-  forgetTab();
 });
 // Coming back with the browser's Back button from a page kept in memory: load it fresh.
 window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });

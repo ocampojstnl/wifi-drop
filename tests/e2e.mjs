@@ -47,7 +47,7 @@ async function browser(name, port) {
   await cmd("Runtime.enable"); await cmd("Page.enable");
   await cmd("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   const js = async (expression) => (await cmd("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result?.value;
-  return { js, errors, go: async (p) => { await cmd("Page.navigate", { url: BASE + p }); await sleep(2500); } };
+  return { js, errors, go: async (p) => { await cmd("Page.navigate", { url: BASE + p }); await sleep(2500); }, reload: async () => { await cmd("Page.reload", {}); await sleep(2500); } };
 }
 
 let failed = 0;
@@ -82,6 +82,12 @@ try {
     const buf = new Uint8Array(await (await fetch(a.href)).arrayBuffer()); let ok = buf.length === ${SIZE};
     for (let i = 0; ok && i < buf.length; i += 997) ok = buf[i] === ((i * 31 + 7) & 255); return (ok ? "intact" : "CORRUPT") + ", " + buf.length + " bytes"; })()`);
   check(/^intact/.test(intact), "the file arrives intact", intact);
+  // A reloads the page (as with pull-to-refresh): its file must still be shared afterwards, and B must see it again.
+  await A.reload();
+  const mineAfter = await A.js(`[...document.querySelectorAll("#mine .file")].map((e) => e.textContent).join(" ")`);
+  check(/holiday-video/.test(mineAfter || ""), "A still shares the file after reloading", mineAfter ? "" : "gone from You’re sharing");
+  const back = await until(() => B.js(`[...document.querySelectorAll("#inbox .file .name")].some((e) => /holiday-video/.test(e.textContent))`), 30000);
+  check(!!back, "B sees the file again after A reloads");
   check(!A.errors.length && !B.errors.length, "no page errors", [...A.errors, ...B.errors].join(" / ").slice(0, 300));
 } catch (e) {
   check(false, "test run", e.message);
