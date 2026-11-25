@@ -2,18 +2,24 @@
 //
 // Sharing a room name isn't proof enough. Phones on mobile data, offices and some internet providers (CGNAT) put
 // many unrelated homes behind one public address, so strangers can end up in the same room. So once two devices are
-// connected, each one looks at HOW the connection runs, and only trusts the other if it's local:
+// connected, each one looks at HOW the connection runs, and turns the other away only on clear evidence that it's
+// somewhere else:
 //
-//   - the path is direct between the devices' own network addresses ("host" candidates), not via the internet
-//     (a "srflx" path out through the router and back) and never via a relay ("relay");
-//   - the other device's address is a home-network one (192.168.x, 10.x, 172.16–31.x, IPv6 fc00::/7 or fe80::),
-//     or a ".local" name (those only work on the same network), or a public IPv6 address in this device's own /64;
-//   - carrier-shared addresses (100.64.0.0/10) don't count: they're shared by strangers;
-//   - and the reply time is short, as it is on one Wi-Fi.
+//   - the connection goes through a relay server;
+//   - the other device's address is a carrier-shared one (100.64.0.0/10: shared by strangers);
+//   - the other device is reached at a public IPv4 address that isn't this home's own (the path left the network),
+//     or at a public IPv6 address outside this home's /64;
+//   - or replies take far longer than any Wi-Fi.
+//
+// Everything else counts as the same network: a direct path between home-network addresses (192.168.x, 10.x, ...),
+// a ".local" name, an address the browser keeps hidden, or a path out to this home's own router address and straight
+// back in (routers that block local device names connect phones and computers that way). When the browser can't
+// tell at all, the device is trusted: it already had to come from this home's internet address to be in the room.
 //
 // Devices that fail aren't shown, get nothing from this one (not its name, nor its files) and can't ask it for anything.
 
-export const MAX_RTT = 0.1; // seconds; one Wi-Fi is usually under 0.02
+export const MAX_RTT = 0.5; // seconds; phones on Wi-Fi power saving can take a few hundred ms, the internet abroad more
+export const MAX_RTT_VIA_ROUTER = 0.3; // out to the home's public address and back in
 
 const v4 = (ip) => /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip)?.slice(1).map(Number) ?? null;
 const prefix64 = (ip) => {
@@ -46,18 +52,21 @@ export function addressKind(ip = "") {
 export function isLocalPath({ pair, local, remote, localAddresses = [] }) {
   if (!pair || !local || !remote) return null;
   if (local.candidateType === "relay" || remote.candidateType === "relay") return false;
-  if (local.candidateType !== "host") return false; // went out through the router: not on this network
-  if (!["host", "prflx"].includes(remote.candidateType)) return false;
-  const ip = remote.address ?? remote.ip ?? "";
+  const rtt = typeof pair.currentRoundTripTime === "number" ? pair.currentRoundTripTime : null;
+  if (rtt !== null && rtt > MAX_RTT) return false;
+  const ip = String(remote.address ?? remote.ip ?? "");
   const kind = addressKind(ip);
   if (kind === "shared") return false;
   if (kind === "public") {
-    // Public IPv6 is fine if it's in this home's /64; public IPv4 never is (that path left the network).
-    if (!ip.includes(":")) return false;
-    const mine = localAddresses.filter((a) => String(a).includes(":") && addressKind(a) === "public");
-    if (mine.length ? !mine.some((a) => prefix64(a) === prefix64(ip)) : !(pair.currentRoundTripTime <= 0.03)) return false;
+    const mine = localAddresses.filter((a) => addressKind(a) === "public" && String(a).includes(":") === ip.includes(":"));
+    if (ip.includes(":")) {
+      // Public IPv6: fine inside this home's /64.
+      if (mine.length ? !mine.some((a) => prefix64(a) === prefix64(ip)) : !(rtt !== null && rtt <= 0.05)) return false;
+    } else {
+      // Public IPv4: only this home's own router address (out and straight back in), and quick.
+      if (!mine.includes(ip) || (rtt !== null && rtt > MAX_RTT_VIA_ROUTER)) return false;
+    }
   }
-  if (typeof pair.currentRoundTripTime === "number" && pair.currentRoundTripTime > MAX_RTT) return false;
   return true;
 }
 

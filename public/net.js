@@ -26,7 +26,7 @@ const RELAYS = 10; // relays used at once to find each other (Trystero's default
  * This network's public IPv4 address, as a STUN helper sees it (or "" if there's none, or it takes too long).
  * Phones and computers on one Wi-Fi may reach the site over IPv6 or IPv4; this lets them all land in the same room.
  */
-function publicIPv4(iceServers, ms = 2500) {
+function publicIPv4(iceServers, ms = 4000) {
   return new Promise((resolve) => {
     let pc;
     const done = (ip = "") => { clearTimeout(timer); try { pc?.close(); } catch {} resolve(ip); };
@@ -55,7 +55,10 @@ const cleanList = (list) => (Array.isArray(list) ? list.slice(0, MAX_LISTED).map
  *   onOnline(boolean)                    connected to the relays (needed only to find devices that arrive later)
  */
 export async function connect({ profile, iceServers, onHello, onDevices, onSignal, onGrant, onOnline }) {
-  const ipv4 = await publicIPv4(iceServers);
+  // Learned once per tab (it takes a moment) and remembered across its pages.
+  let ipv4 = "";
+  try { ipv4 = sessionStorage.getItem("wifi-drop:v4") || ""; } catch {}
+  if (!ipv4) { ipv4 = await publicIPv4(iceServers); try { if (ipv4) sessionStorage.setItem("wifi-drop:v4", ipv4); } catch {} }
   const res = await fetch("/api/room" + (ipv4 ? "?v4=" + encodeURIComponent(ipv4) : ""), { cache: "no-store" });
   if (!res.ok) throw new Error("Couldn't reach Wi-Fi Drop");
   const { room: roomId, password } = await res.json();
@@ -128,7 +131,7 @@ export async function connect({ profile, iceServers, onHello, onDevices, onSigna
       verdict = await checkConnection(room.getPeers()[peerId]?.connection).catch(() => null);
     }
     if (peers.get(peerId) !== p) return; // it left meanwhile
-    p.lan = verdict === true;
+    p.lan = verdict !== false; // no clear sign it is elsewhere: same home address, so trusted
     if (!p.lan) { console.info("Wi-Fi Drop: ignoring a device that isn't on this network"); return; }
     sendProfile(peerId);
     sentPrivate.delete(peerId);

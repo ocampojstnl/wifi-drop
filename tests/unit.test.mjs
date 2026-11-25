@@ -19,16 +19,25 @@ test("same network: direct between home-network addresses", () => {
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("host", "abc.local") }), true);
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("prflx", "192.168.1.31") }), true);
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("host", "2001:db8:1:2::9"), localAddresses: ["2001:db8:1:2::5"] }), true);
+  // A phone on Wi-Fi power saving: slow replies, still the same network.
+  assert.equal(isLocalPath({ pair: pair(0.25), local: cand("host"), remote: cand("host", "192.168.1.31") }), true);
+  // Addresses the browser keeps hidden.
+  assert.equal(isLocalPath({ pair: pair(), local: cand("host", ""), remote: cand("host", "") }), true);
+  // Routers that block local device names: out to the home's own address and straight back in.
+  assert.equal(isLocalPath({ pair: pair(0.01), local: cand("srflx", "203.0.113.7"), remote: cand("srflx", "203.0.113.7"), localAddresses: ["203.0.113.7"] }), true);
+  assert.equal(isLocalPath({ pair: pair(0.01), local: cand("host"), remote: cand("prflx", "203.0.113.7"), localAddresses: ["203.0.113.7"] }), true);
 });
 
-test("not the same network: via the internet, a relay, carrier-shared, a different IPv6 home, or slow", () => {
-  assert.equal(isLocalPath({ pair: pair(), local: cand("srflx"), remote: cand("host", "192.168.1.31") }), false);
+test("not the same network: another home's address, a relay, carrier-shared, a different IPv6 home, or far too slow", () => {
+  assert.equal(isLocalPath({ pair: pair(), local: cand("srflx", "203.0.113.7"), remote: cand("srflx", "198.51.100.4"), localAddresses: ["203.0.113.7"] }), false);
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("srflx", "203.0.113.9") }), false);
   assert.equal(isLocalPath({ pair: pair(), local: cand("relay"), remote: cand("host", "192.168.1.31") }), false);
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("host", "100.70.1.2") }), false);
-  assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("prflx", "203.0.113.9") }), false);
+  assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("prflx", "203.0.113.9"), localAddresses: ["203.0.113.7"] }), false);
   assert.equal(isLocalPath({ pair: pair(), local: cand("host"), remote: cand("host", "2001:db8:9:9::9"), localAddresses: ["2001:db8:1:2::5"] }), false);
-  assert.equal(isLocalPath({ pair: pair(0.25), local: cand("host"), remote: cand("host", "192.168.1.31") }), false);
+  assert.equal(isLocalPath({ pair: pair(0.8), local: cand("host"), remote: cand("host", "192.168.1.31") }), false);
+  // Out to the home's address and back, but slow: likely strangers sharing a carrier's address.
+  assert.equal(isLocalPath({ pair: pair(0.4), local: cand("srflx", "203.0.113.7"), remote: cand("srflx", "203.0.113.7"), localAddresses: ["203.0.113.7"] }), false);
 });
 
 test("can't tell yet without stats", () => {
