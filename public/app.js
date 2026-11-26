@@ -975,14 +975,31 @@ const isPhone = () => !document.body.classList.contains("is-pc") && !window.show
  * Where an incoming file goes. On the PC (Chrome or Edge), straight to disk as it arrives, so any size works.
  * Elsewhere it's held in memory and saved at the end.
  */
+/** A phone or tablet: a touch screen is its main pointer. */
+const TOUCH_DEVICE = matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches;
+
+/** On the local test server only: tell it about a problem (it prints it), so phone and tablet trouble shows on the PC. */
+function report(what, e) {
+  if (!config.joinUrl) return;
+  const body = { problem: what, error: String(e?.message || e || "").slice(0, 200), stage: window.wifiDropStage, stack: String(e?.stack || "").slice(0, 600), browser: navigator.userAgent, secure: window.isSecureContext };
+  fetch("/api/report", { method: "POST", body: JSON.stringify(body) }).catch(() => {});
+}
+
 async function openSink(file, dir) {
   if (dir) {
     const handle = await dir.getFileHandle(await freeName(dir, file.name), { create: true });
     return diskSink(await handle.createWritable());
   }
-  if (window.showSaveFilePicker) {
-    const handle = await window.showSaveFilePicker({ suggestedName: file.name });
-    return diskSink(await handle.createWritable());
+  // Straight to disk with a "Save as" dialog: on computers only. Phones and tablets that have the dialog (newer
+  // Android Chrome) often can't complete it, and the download used to stop there without a word.
+  if (window.showSaveFilePicker && !TOUCH_DEVICE) {
+    try {
+      const handle = await window.showSaveFilePicker({ suggestedName: file.name });
+      return diskSink(await handle.createWritable());
+    } catch (e) {
+      if (e?.name === "AbortError") throw e; // the person cancelled: no download
+      report("save dialog failed", e); // anything else: carry on without the dialog (below)
+    }
   }
   // Held in memory, then saved with a tap: a download the page starts by itself (after the transfer) is
   // blocked by many phone and tablet browsers (Huawei Browser among them).
@@ -1024,14 +1041,17 @@ function memoryOk(files) {
 async function receiveOne(peer, file) {
   if (!memoryOk([file])) return;
   let sink;
-  try { sink = await openSink(file); } catch { return; } // the save dialog was cancelled
+  try { sink = await openSink(file); } catch (e) {
+    if (e?.name !== "AbortError") { report("download couldn't start", e); toast(`Couldn't start downloading ${file.name}: ${e?.message || e}`); }
+    return; // cancelled in the save dialog, or failed (said above)
+  }
   receive(peer, file, sink);
 }
 
 async function receiveAll(peer, files) {
   if (!memoryOk(files)) return;
   // On the PC: pick a folder once, and every file goes into it.
-  if (window.showDirectoryPicker) {
+  if (window.showDirectoryPicker && !TOUCH_DEVICE) {
     let dir;
     try { dir = await window.showDirectoryPicker({ mode: "readwrite" }); } catch { return; }
     for (const f of files) receive(peer, f, await openSink(f, dir));
@@ -1061,7 +1081,7 @@ function receive(peer, file, sink) {
     incoming--;
     clearTimeout(timer);
     const conn = c;
-    if (!ok) { sink.abort(); row.fail(text); }
+    if (!ok) { sink.abort(); row.fail(text); report("download failed", text); }
     else if (sink.manual) row.ready(await sink.close());
     else { await sink.close(); row.done(text); }
     if (conn) setTimeout(conn.close, 500);
@@ -1266,7 +1286,7 @@ async function join() {
     setOnline(false);
     const why = String(e?.message || e).slice(0, 200);
     // On the local test server, tell it why (it prints it), so problems on phones and tablets can be seen on the PC.
-    if (config.joinUrl) fetch("/api/report", { method: "POST", body: JSON.stringify({ error: why, stage: window.wifiDropStage, stack: String(e?.stack || "").slice(0, 600), browser: navigator.userAgent, secure: window.isSecureContext }) }).catch(() => {});
+    report("couldn't connect", e);
     // Opened on a plain http:// address (other than localhost): browsers switch off the encryption Wi-Fi Drop needs,
     // so it can never connect there. Say so, instead of retrying for ever.
     if (!window.isSecureContext) {
